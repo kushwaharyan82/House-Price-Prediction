@@ -1,9 +1,43 @@
-import streamlit as st
+import os
+import gzip
+import shutil
+import requests
 import joblib
 import pandas as pd
+import streamlit as st
 
-# Load trained model
-model = joblib.load("house_price_model.pkl")
+
+# Model download URL
+MODEL_URL = "https://github.com/kushwaharyan82/House-Price-Prediction/releases/download/v1.0/house_price_model.pkl.gz"
+
+MODEL_GZ = "house_price_model.pkl.gz"
+MODEL_FILE = "house_price_model.pkl"
+
+
+# Load model
+@st.cache_resource
+def load_model():
+
+    # Download compressed model if not available
+    if not os.path.exists(MODEL_FILE):
+
+        if not os.path.exists(MODEL_GZ):
+            response = requests.get(MODEL_URL)
+            response.raise_for_status()
+
+            with open(MODEL_GZ, "wb") as f:
+                f.write(response.content)
+
+        # Extract .gz file
+        with gzip.open(MODEL_GZ, "rb") as f_in:
+            with open(MODEL_FILE, "wb") as f_out:
+                shutil.copyfileobj(f_in, f_out)
+
+    return joblib.load(MODEL_FILE)
+
+
+model = load_model()
+
 
 # Page configuration
 st.set_page_config(
@@ -12,18 +46,22 @@ st.set_page_config(
     layout="centered"
 )
 
+
 # Title
 st.title("🏠 House Price Prediction")
 st.write("Predict the estimated house value using a Machine Learning model.")
 
 st.divider()
 
+
 # Input section
 st.subheader("🏡 Enter House Details")
 
 col1, col2 = st.columns(2)
 
+
 with col1:
+
     MedInc = st.number_input(
         "Median Income",
         min_value=0.0,
@@ -48,7 +86,9 @@ with col1:
         value=1.0
     )
 
+
 with col2:
+
     Population = st.number_input(
         "Population",
         min_value=0.0,
@@ -71,7 +111,9 @@ with col2:
         value=-118.0
     )
 
+
 st.divider()
+
 
 # Prediction
 if st.button("🔮 Predict House Price", use_container_width=True):
@@ -98,20 +140,25 @@ if st.button("🔮 Predict House Price", use_container_width=True):
         value=f"${price:,.2f}"
     )
 
+
 st.divider()
+
 
 # Model information
 st.subheader("🤖 Model Information")
 
 col1, col2, col3 = st.columns(3)
 
+
 with col1:
     st.write("**Algorithm**")
     st.write("Random Forest")
 
+
 with col2:
     st.write("**R² Score**")
     st.write("0.805")
+
 
 with col3:
     st.write("**RMSE**")
